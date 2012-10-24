@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# run analyse to generate some stats on the solution by playing with selections.dat
+
+replacefile=$1
+resultsfile=$2
+
+# These are the "default" values -- they will be written to
+# constraints.dat after everything
+defmarkm=0.01
+defstudentweight=0.95
+delay=0.01 
+
+function replace {
+    sed -ibak -e "/param/s/$1.*/$1 $2;/g" $replacefile
+}
+
+[ -e $resultsfile ] && mv $resultsfile $resultsfile.bak
+
+for markm in `seq 0 0.01 0.1`; do
+    echo -n "markm="$markm, "studentweight="
+    replace markm $markm
+    for studentweight in `seq 0.8 0.02 1`; do
+	replace studentweight $studentweight
+	sleep $delay
+	make | awk '/Average unhappiness/ {print '$markm','$studentweight',$NF}' >> $resultsfile 
+	echo -n $studentweight" "
+    done
+    echo 
+    echo >> $resultsfile
+done

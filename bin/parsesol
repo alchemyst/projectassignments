@@ -1,0 +1,9 @@
+#!/bin/sed -f
+# if a line contains " assigned", read next one and remove newline char
+/ assigned/N
+s/\n//
+# on lines with 1 in the first column (after the star), 
+# print the student name and assignment
+/\*[^01]*1/s/.*assigned\[\(.*\),\(.*\)\].*/\1\t\2/p
+# continue to next line without printing.
+d
