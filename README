@@ -75,6 +75,10 @@ constraints and paramaters correctly.
 
 2.2 Get choices from students
 
+You can use the website to generate these files as well.
+
+TODO: Update this document to reflect the correct workflow from the website.
+
 To get choices from students, you modify the projectchoices.xls file
 from the template.  Important points to remember are that the checks
 in the spreadsheet use named ranges -- you need to define these ranges
@@ -99,7 +103,11 @@ change how the mails are handled.
 
 2.3 Solve the linear programming problem and postprocess the data
 
-Run make.  This will compile all the selections, solve the problem and
+Run 
+
+$ module=XXX make
+
+This will compile all the selections, solve the problem and
 do post processing, placing the result in assignments.csv.  A nice
 report is in report.html.
 

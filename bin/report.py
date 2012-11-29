@@ -49,10 +49,13 @@ outfile = open(outfilename, 'w')
 
 lecttable = table(moduledir, 'lecturers')
 lecturers = sorted(lecttable.column('Code'))
+maxperlecturer = lookuptable(lecttable, 'Code', 'Max')
 
 projecttable = table(moduledir, 'projects')
 projects = sorted(projecttable.column('Code'))
 projectdescriptions = lookuptable(projecttable, 'Code', 'Title')
+minperproject = lookuptable(projecttable, 'Code', 'Min')
+maxperproject = lookuptable(projecttable, 'Code', 'Max')
 
 ignorestudents = table(outdir, 'ignore').column('Number')
 studentfilter = lambda row: row['Number'] not in ignorestudents
@@ -61,6 +64,7 @@ studenttable = table(moduledir, 'students')
 studenttable.filter(studentfilter)
 studentnames = lookuptable(studenttable, 'Number', 'Name')
 students = studenttable.column('Number')
+students.sort(key=lambda s: studentnames[s])
 marks = lookuptable(studenttable, 'Number', 'Mark')
 
 choices = lookuptable(table(outdir, 'selections'), ('Number', 'Code'), 'Choice')
@@ -79,6 +83,8 @@ for key in choices:
 selected = []
 projectsbystudent = {}
 studentsbyproject = dict([p, s] for s, p in assignments.keys() if assignments[s,p]==1)
+nstudentsbyproject = dict([(p, len(studentsbyproject.get(p, []))) for p in projects])
+
 studentsbylecturer = dict([l, []] for l in lecturers)
 choicesbylecturer = dict([l, []] for l in lecturers)
 for s in students:
@@ -100,6 +106,7 @@ for s in students:
                 studentsbylecturer[l].append(s)
             else:
                 studentsbylecturer[l] = [s]
+nstudentsbyproject = dict([(p, len(studentsbyproject.get(p, []))) for p in projects])
 
 newclass = {True: 'class="newgroup"', 
             False: ""}
@@ -142,7 +149,9 @@ outfile.write(str(qt.tr([qt.th('Project')] \
                         + [qt.th(Project(p).number, {'class': 'sel%s' % (p in selected),
                                                      'title': '%s (%s)' % (','.join(studentsbyproject.get(p, [])), projectdescriptions.get(p, ''))})
                                   for p in projects])))
-outfile.write(str(qt.tr([qt.td("Students")] + [qt.td(len(studentsbyproject.get(p, []))) for p in projects])))
+outfile.write(str(qt.tr([qt.td("Min")] + [qt.td(minperproject[p]) for p in projects])))
+outfile.write(str(qt.tr([qt.td("Students")] + [qt.td(nstudentsbyproject[p]) for p in projects])))
+outfile.write(str(qt.tr([qt.td("Max")] + [qt.td(maxperproject[p]) for p in projects])))
 outfile.write(str("</thead>\n"))
 outfile.write("<tbody overflow='scroll'>")
 for s in students:
@@ -173,21 +182,44 @@ for s in students:
 outfile.write("</tbody>")
 outfile.write("</table>")
 
-# Mark summary per lecturer
-# ======================================================================
+
 flatmarks = [float(marks[s]) for s in students if s in marks]
 classavg = mean(flatmarks)
 def markbar(m):
     return str(qt.tag('span', "%s" % ','.join(["%2.1f" % (i-classavg) for i in m]), {'class': 'bar'}))
 
-outfile.writelines([str(qt.h1("Statistics per lecturer")),
-                    str(qt.p("Class average: %2.1f" % classavg)),
-                    str(qt.p("The bar charts indicate student marks minus class average -- red below class avg and blue above.")),
-                    str(qt.p("For reference, the whole class looks like this: " + markbar(sorted(flatmarks)))),
-                    str(qt.p("You can click on the headings to sort the tables."))])
+# About the statistics
 
+section = [qt.h1("Statistics with marks"),
+           qt.p("Class average: %2.1f" % classavg),
+           qt.p("The bar charts indicate student marks minus class average -- red below class avg and blue above."),
+           qt.p("For reference, the whole class looks like this: " + markbar(sorted(flatmarks))),
+           qt.p("You can click on the headings to sort the tables.")]
+
+outfile.writelines(map(str, section))
+
+# Assignment histogram
+# ======================================================================
+
+outfile.write(str(qt.h2("Assignment breakdown")) + '\n')
+outfile.write("<table>\n")
+outfile.write(str(qt.tr([qt.th('Choice'), qt.th('N'), qt.th('Marks')])))
+choicesbystudent = dict([(s, choices[(s, projectsbystudent[s])]) for s in students])
+for choice in ['P'] + range(1, 11) + ['.']:
+    m = sorted([float(marks[s]) for s in students
+                if choicesbystudent[s] == str(choice)])
+    outfile.write(str(qt.tr([qt.td(str(choice)),
+                             qt.td(len(m)),
+                             qt.td(markbar(m))])))
+outfile.write("</table>")
+    
+
+# Mark summary per lecturer
+# ======================================================================
+outfile.write(str(qt.h2("Statistics per lecturer")))
 outfile.write("\n<table class='sortable'>\n")
 outfile.write(str(qt.tr(qt.th(h) for h in ('Lecturer', 'Avg Mark', 'Breakdown', 'Number', 'Vetos', 'Pre', 'Popularity', 'Students'))))
+
 
 def popscore(f):
     return 1/f if f > 0 else 1
@@ -233,7 +265,7 @@ outfile.write("</table>\n")
 
 # Per project
 # ======================================================================
-outfile.writelines([str(qt.h1('Statistics per project')),
+outfile.writelines([str(qt.h2('Statistics per project')),
                     str(qt.p("Here, the bar charts are for all the students who selected the project.")),
                     "<table class='sortable'>"])
 
@@ -254,7 +286,7 @@ for p in projects:
 outfile.write("</table>\n")
 
 # ======================================================================
-outfile.writelines([str(qt.h1('Student satisfaction')),
+outfile.writelines([str(qt.h2('Student satisfaction')),
                     str(qt.p('Who got their first choice, what were their marks, who got bad choices?')),
                    "<table class='sortable'>",
                    str(qt.tr(qt.th(k) for k in ('Number', 'Name', 'Mark', 'Choice', 'Project')))])
@@ -264,8 +296,20 @@ for s in students:
 outfile.write("</table>\n")
 
 # ======================================================================
+outfile.writelines([str(qt.h2('Open projects')),
+                    str(qt.p('Which projects can still be assigned without violating constraints'))])
 
-# outfile.write(str(qt.h1('Choice battles')) + '\n')
+outfile.write('<table>\n')
+outfile.write(str(qt.tr([qt.th('Project'), qt.th('Description')])))
+outfile.writelines([str(qt.tr([qt.td(p), qt.td(projectdescriptions[p])]))
+                    for p in projects
+                    if nstudentsbyproject[p] < int(maxperproject[p]) and len(studentsbylecturer[getlect(p)]) < int(maxperlecturer[getlect(p)])])
+outfile.write('</table>\n')
+
+
+# ======================================================================
+
+# outfile.write(str(qt.h2('Choice battles')) + '\n')
 # choicesbystudent = {}
 # choicelist = []
 # for s in students:
@@ -278,7 +322,7 @@ outfile.write("</table>\n")
        
 
 # ======================================================================
-#outfile.write(str(qt.h1("Project correspondence")))
+#outfile.write(str(qt.h2("Project correspondence")))
 #outfile.write(str(qt.p("Of the students who selected project i, what percentage also selected project j?")))
 #
 #def studentswhochose(p):

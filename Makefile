@@ -1,7 +1,11 @@
 model = assignment.mod
-module = csc411_2012
+#module = csc411_2013
 outdir = $(module)/output
 out = $(outdir)/selections
+
+ifndef module
+$(error You need to define the module environment variable to point to the directory that you want to build)
+endif
 
 # These are all the "Inputs" into the system expressed as CSV files in the module directory
 moduletables := $(foreach table,lecturers students projects preassigned parameters,$(module)/$(table).csv)
@@ -10,7 +14,7 @@ outputtables := $(foreach table,assignments selections,$(outdir)/$(table).csv)
 
 #selections = $(module)/selections/*.xls
 
-all: $(outdir)/report.html
+all: $(outdir)/report.html $(outdir)/upload.csv
 
 
 # CSV representation of the Excel selections file
@@ -29,6 +33,11 @@ $(out).dat: $(out).csv $(moduletables) bin/makedata.py
 $(outdir)/assignments.csv: $(out).dat $(model)
 	glpsol --model $(model) --data $(out).dat --log $(outdir)/runlog.txt
 	mv assignments.csv $@
+
+# File for upload to website
+$(outdir)/upload.csv: $(outdir)/assignments.csv
+	echo Student ID,Project ID > $@
+	grep '1$$' $< | tr -d \" | cut -d , -f 1,2 >> $@
 
 # Reporting
 $(outdir)/report.html: $(out).csv $(moduletables) $(outputtables) bin/report.py
