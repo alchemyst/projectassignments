@@ -1,0 +1,55 @@
+table.selectionmatrix {
+    text-align: center;
+    border-collapse: collapse;
+}
+
+table.selectionmatrix td { width: 20px; }
+
+th.selFalse {
+   background-color: pink; 
+}
+
+th.names {
+    text-align: left;
+    font-size: small;
+    font-weight: normal;
+}
+
+td.goodassigned, td.preassignedassigned
+{
+    border-style: solid;
+    border-width: 2px;
+    background-color: LightGreen;
+}
+
+td.vetounassigned 
+{
+    font-size: 8pt;
+    color: DarkRed;
+}
+
+td.selectedassigned
+{
+    border-style: solid;
+    border-width: 2px;
+    background-color: LightYellow;
+}
+
+
+td.badassigned, td.vetoassigned, td.unselectedassigned
+{
+    border-style: solid;
+    border-width: 2px;
+    background-color: LightPink;
+}
+
+td.preassignedunassigned
+{
+	background-color: LightPink;
+}
+
+colgroup
+{
+    border-style: solid;
+    border-width: thin;
+}
