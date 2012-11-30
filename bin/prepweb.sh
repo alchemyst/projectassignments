@@ -1,22 +1,22 @@
 #!/bin/bash
 
-if [ $# -ne 2]; then
+if [ $# -ne 2 ]; then
     echo $0 optFile.tar.gz moduledir
     exit 2
 fi
 
 # Specify the .tar.gz file from the website as the base file
-$tarfile=$1
-$module=$2
+tarfile=$1
+module=$2
 
 webdir=weboutput/
-[-e $webdir ] && mkdir $webdir
+[ -e "$webdir" ] && mkdir "$webdir"
 
 echo -n Deleting previous files...
-rm -rf $webdir/*
+rm -rf "$webdir"/*
 echo " done"
 echo -n Unpacking new files...
-tar -xzv -C $webdir -f $tarfile
+tar -xzv -C "$webdir" -f "$tarfile"
 echo " done"
 
 echo -n Copying files...
