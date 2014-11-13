@@ -8,6 +8,11 @@ var assigned{s in student, p in project} binary;
 
 param maxselection >=0;
 
+/* Minimum number of "good" students (above class average mark 
+ * per lecturer 
+ */
+param mingood >= 0;
+
 /* pre-assignments */
 param preassigned{s in student, p in project} binary;
 
@@ -47,6 +52,10 @@ param markm;
 /* calculated variables */
 param nstudents := sum{s in student} 1 ;
 
+param averagemark := sum{s in student} mark[s] / nstudents;
+
+param goodstudent{s in student} := if mark[s] > averagemark then 1 else 0;
+
 /* Goal */
 minimize unhappiness: studentweight*(sum{s in student, p in project} assigned[s,p] * (studpref[s,p] * (markm*mark[s] + markc)))
                 + (1-studentweight)*(sum{s in student, l in lecturer, p in project} assigned[s,p]*belongs[l,p]*lectpref[l,p]);
@@ -74,6 +83,9 @@ s.t. lectotal{l in lecturer} :
 /* Limit worst case selection */
 s.t. worstcase{s in student, p in project}:
      studpref[s,p]*assigned[s,p] <= maxselection;
+/* Give every lecturer mingood good students */
+s.t. goodstudents{l in lecturer}:
+     sum{s in student, p in project} belongs[l,p]*assigned[s,p]*goodstudent[s] >= mingood;
 
 solve;
 
@@ -84,6 +96,7 @@ printf "Number of lecturers:           %3i\n", sum{l in lecturer} 1;
 printf "Number of projects:            %3i\n", sum{p in project} projmax[p];
 printf "Minimum assignments (lectmin): %3i\n", sum{l in lecturer} (lectmin[l]);
 printf "Minimum assignments (projmin): %3i\n", sum{p in project} (projmin[p]);
+printf "Average mark:                  %2.1f\n", averagemark;
 /*
 printf "------ Popularity --------\n";
 printf "Popularity per lecturer is sum(1/choice)/(total_students*nprojects)*100\n";
@@ -124,11 +137,13 @@ printf " >10 %7i\n", sum{s in student, p in project} if assigned[s,p] then if st
 printf "Total unhappiness:   %5i\n", sum{s in student, p in project} assigned[s,p] * studpref[s,p];
 printf "Average unhappiness: %5.2f\n", (sum{s in student, p in project} assigned[s,p] * studpref[s,p])/(sum{s in student} 1);
 printf "---- Results ----- \n";
-printf "Lecturer    Number of projects (including pre-allocations)\n";
+printf "Nprojects: Number of projects (including pre-allocations)\n";
+printf "Ngood    : Number of good students (with above class average marks)\n";
+printf "Lecturer    Nprojects        Ngood\n";
 for {l in lecturer}
 {
-	printf "%s\t%8i\n", l, (sum{p in project, s in student} 
-            if belongs[l, p] then assigned[s,p] else 0);
+	printf "%s\t%8i\t%8i\n", l, (sum{p in project, s in student} 
+            if belongs[l, p] then assigned[s,p] else 0), (sum{s in student, p in project} belongs[l,p]*assigned[s,p]*goodstudent[s]);
 }
 
 table assigment_table {s in student, p in project} OUT "CSV" "assignments.csv" :
