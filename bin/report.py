@@ -112,15 +112,27 @@ newclass = {True: 'class="newgroup"',
             False: ""}
 
 # Outputs
-outfile.write("""<html>
-<LINK href="report.css" rel="stylesheet" type="text/css" />
+outfile.write("""<!doctype html>
+<html lang="en">
 <head>
-<script src="sorttable.js" ></script>
-<script type="text/javascript" src="jquery-1.3.2.min.js" ></script>
+<meta charset="utf-8">
+
+<title>Project assignment results</title>
+<meta name="description" content="Project assignment results">
+<meta name="author" content="Automatic results generator">
+
+<link href="report.css" rel="stylesheet" type="text/css" >
+<script type="text/javascript" src="sorttable.js" ></script>
+<script type="text/javascript" src="jquery-2.1.1.min.js" ></script>
 <script type="text/javascript" src="jquery.sparkline.min.js" ></script>
+<script type="text/javascript" src="jquery.fixedheadertable.min.js"></script>
 <script type="text/javascript">
 /* <![CDATA[ */
-$(function() { $('.bar').sparkline('html', {type: 'bar'}) });
+$(function() { $('.bar').sparkline('html', {type: 'bar'});
+               /*$('.selectionmatrix').fixedHeaderTable({footer: false, 
+                                                       cloneHeadToFoot: false, 
+                                                       fixedColumn: true }); */
+              });
 /* ]]> */
 </script>
 </head>
@@ -132,10 +144,6 @@ def getlect(p):
 
 c = dict((key, len(list(vals))) for (key, vals) in itertools.groupby(projects, getlect))
 lecturers = sorted(c.keys())
-
-# TODO: this table desperately needs to keep the headers on top
-# Options to try:
-# http://stackoverflow.com/questions/643340/freeze-th-header-and-scrolling-data
 
 outfile.write(str(qt.h1('Selections')))
 outfile.write(str(qt.p('Report generated on ' + datetime.datetime.now().strftime('%c'))))
@@ -153,7 +161,7 @@ outfile.write(str(qt.tr([qt.td("Min")] + [qt.td(minperproject[p]) for p in proje
 outfile.write(str(qt.tr([qt.td("Students")] + [qt.td(nstudentsbyproject[p]) for p in projects])))
 outfile.write(str(qt.tr([qt.td("Max")] + [qt.td(maxperproject[p]) for p in projects])))
 outfile.write(str("</thead>\n"))
-outfile.write("<tbody overflow='scroll'>")
+outfile.write("<tbody>")
 for s in students:
     n = studentnames[s]
     outfile.write('<tr><th class="names" title="%s - %s">%s</th>' % (s, projectsbystudent[s], n))
@@ -243,7 +251,7 @@ for l in lecturers:
         popularity = 0 
     data = [qt.td(l),
             qt.td('%2.1f' % markavg),
-            qt.td(msparkline, {'align': 'center'}),
+            qt.td(msparkline),
             qt.td(len(m)),
             qt.td('%2.1f' % (float(nvetos)/nprojects)),
             qt.td(preassignments),
@@ -257,7 +265,7 @@ for l in lecturers:
         photos.append(qt.tag('img', [], {'src': photopath(s),
                                          'alt': studentnames[s],
                                          'title': title,
-                                         'width': '40px'}))
+                                         'width': '40'}))
     data.append(qt.td(photos))
     outfile.write(str(qt.tr(data)))
     
@@ -271,7 +279,7 @@ outfile.writelines([str(qt.h2('Statistics per project')),
 
 breakdownvalues = ['P'] + map(str, range(1, 11)) + ['V']
 outfile.write(str(qt.tr(map(qt.th, ['Project','Popularity', 'Marks', 'Breakdown'] \
-                                    + breakdownvalues + ['Total']) + [qt.th('Title', {'width':'100em'})])))
+                                    + breakdownvalues + ['Total']) + [qt.th('Title')])))
 for p in projects:
     popularity = sum(popscore(float(choices[(s, p)])) for s in students if choices[(s,p)].isdigit())
     data = [qt.td(p), qt.td('%2.1f' % (popularity))]
