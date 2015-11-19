@@ -5,10 +5,12 @@ set lecturer; # set of lecturers
 
 /* is student s assigned to project p? */
 var assigned{s in student, p in project} binary;
+var students_per_lecturer{l in lecturer};
+var Ngood{l in lecturer};
 
 param maxselection >=0;
 
-/* Minimum number of "good" students (above class average mark 
+/* Minimum percentage of "good" students (above class average mark 
  * per lecturer 
  */
 param mingood >= 0;
@@ -77,15 +79,18 @@ s.t. preassignments{s in student, p in project}:
 s.t. projectassigned{p in project} : 
         projmin[p] <= sum{s in student} assigned[s,p] <= projmax[p];
 /* Lecturers getting within their limits */
+s.t. students_per_lect{l in lecturer}:
+     students_per_lecturer[l] = sum{p in project, s in student} if belongs[l, p] then assigned[s,p] else 0;
 s.t. lectotal{l in lecturer} : 
-        lectmin[l] <= (sum{p in project, s in student} 
-            if belongs[l, p] then assigned[s,p] else 0) <= lectmax[l];
+        lectmin[l] <= students_per_lecturer[l] <= lectmax[l];
 /* Limit worst case selection */
 s.t. worstcase{s in student, p in project}:
      studpref[s,p]*assigned[s,p] <= maxselection;
 /* Give every lecturer mingood good students */
+s.t. ngood{l in lecturer}:
+     Ngood[l] = sum{s in student, p in project} belongs[l,p]*assigned[s,p]*goodstudent[s];
 s.t. goodstudents{l in lecturer}:
-     sum{s in student, p in project} belongs[l,p]*assigned[s,p]*goodstudent[s] >= mingood;
+     Ngood[l] >= mingood * students_per_lecturer[l];
 
 solve;
 
