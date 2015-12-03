@@ -129,7 +129,7 @@ for {p in project}
 	for {i in 1..10} {
 		printf "%3i\t", 100*(sum{s in student} if studpref[s,p]==i then 1 else 0)/(sum{s in student} 1);
 	}
-	printf "%6.2f\n", (sum{s in student} if studpref[s,p]>0 && studpref[s,p]<=10 then 1/studpref[s,p] else 0)/(sum{s in student} 1)*100;
+	printf "%6.2f\n", (sum{s in student} if 1 <= studpref[s,p] && studpref[s,p] <= 10 then 1/studpref[s,p] else 0)/(sum{s in student} 1)*100;
 }
 */
 printf "------ Objective --------\n";
@@ -141,6 +141,8 @@ for {i in 0..10}
 printf " >10 %7i\n", sum{s in student, p in project} if assigned[s,p] then if studpref[s,p] > 10 then 1 else 0 else 0;
 printf "Total unhappiness:   %5i\n", sum{s in student, p in project} assigned[s,p] * studpref[s,p];
 printf "Average unhappiness: %5.2f\n", (sum{s in student, p in project} assigned[s,p] * studpref[s,p])/(sum{s in student} 1);
+/* FIXME: The denominator in the following expression is probably wrong. */
+printf "Average unhappiness for students who chose: %5.2f\n", (sum{s in student, p in project} if 1 <= studpref[s,p] && studpref[s,p] <= 10 then studpref[s,p]*assigned[s,p] else 0)/(sum{s in student, p in project} if 1 <= studpref[s,p] && studpref[s,p] <= 10 then assigned[s,p] else 0);
 printf "---- Results ----- \n";
 printf "Nprojects: Number of projects (including pre-allocations)\n";
 printf "Ngood    : Number of good students (with above class average marks)\n";
