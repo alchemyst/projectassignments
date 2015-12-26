@@ -13,6 +13,8 @@ from projectutils import *
 import quicktag as qt
 import logging
 import datetime
+from collections import defaultdict
+from functools import partial
 
 def valid(choice):
     return choice.isdigit()
@@ -29,13 +31,18 @@ def astuple(l):
     """ 
     return tuple(l) if type(l) in (list, tuple) else (l,)
 
-def lookuptable(t, keys, values):
+def lookuptable(t, keys, values, default=None):
     """ Construct a lookup table from table t, using rows from keys to index the values in values
         The idea is to call lookuptable(t, "Keyrow", "valrow") to build a simple lookup table
         it also allows to use tuples for keys or values or both to build two-d lookups as in
         lookuptable(t, ("Keyrow1", "Keyrow2"), "valrow"), which returns a dictionary with tuple keys.
     """
-    return dict([unlist(tuple([row[i] for i in astuple(l)])) for l in [keys, values]] for row in t)
+    if default is not None:
+        constructor = partial(defaultdict, lambda: default)
+    else:
+        constructor = dict
+    return constructor([unlist(tuple([row[i] for i in astuple(l)])) for l in [
+        keys, values]] for row in t)
 
 def mean(arr):
     return float(sum(arr))/float(len(arr)) if len(arr) != 0 else 0
@@ -53,7 +60,7 @@ maxperlecturer = lookuptable(lecttable, 'Code', 'Max')
 
 projecttable = table(moduledir, 'projects')
 projects = sorted(projecttable.column('Code'))
-projectdescriptions = lookuptable(projecttable, 'Code', 'Title')
+projectdescriptions = lookuptable(projecttable, 'Code', 'Title', default='')
 minperproject = lookuptable(projecttable, 'Code', 'Min')
 maxperproject = lookuptable(projecttable, 'Code', 'Max')
 
@@ -67,8 +74,10 @@ students = studenttable.column('Number')
 students.sort(key=lambda s: studentnames[s])
 marks = lookuptable(studenttable, 'Number', 'Mark')
 
-choices = lookuptable(table(outdir, 'selections'), ('Number', 'Code'), 'Choice')
-assignments = lookuptable(table(outdir, 'assignments'), ('Student', 'Project') , 'Assigned')
+choices = lookuptable(table(outdir, 'selections'), ('Number', 'Code'),
+                      'Choice', default='.')
+assignments = lookuptable(table(outdir, 'assignments'),
+                          ('Student', 'Project') , 'Assigned')
 
 # Handle preassignments
 preassignedtable = table(moduledir, 'preassigned')
@@ -81,19 +90,19 @@ for key in choices:
         choices[key] = 'V'
 
 selected = []
-projectsbystudent = {}
-studentsbyproject = dict([p, s] for s, p in assignments.keys() if assignments[s,p]==1)
-nstudentsbyproject = dict([(p, len(studentsbyproject.get(p, []))) for p in projects])
+projectsbystudent = defaultdict(lambda: '')
+studentsbyproject = defaultdict(lambda: [],
+                                [[p, s] for s, p in assignments.keys()
+                                 if assignments[s,p] == 1])
+nstudentsbyproject = defaultdict(int,
+                                 [(p, len(studentsbyproject[p])) for p in projects])
 
-studentsbylecturer = dict([l, []] for l in lecturers)
-choicesbylecturer = dict([l, []] for l in lecturers)
+studentsbylecturer = {l: [] for l in lecturers}
+choicesbylecturer = {l: [] for l in lecturers}
+
 for s in students:
     for p in projects:
         l = Project(p).lecturer
-        if (s,p) not in choices:
-            choices[(s,p)] = '.'
-        if not p in studentsbyproject:
-            studentsbyproject[p]=[]
         if l in choicesbylecturer:
             choicesbylecturer[l].append(choices[(s, p)])
         else:
@@ -102,11 +111,9 @@ for s in students:
             projectsbystudent[s] = p
             studentsbyproject[p].append(studentnames[s])
             selected.append(p)
-            if l in studentsbylecturer:
-                studentsbylecturer[l].append(s)
-            else:
-                studentsbylecturer[l] = [s]
-nstudentsbyproject = dict([(p, len(studentsbyproject.get(p, []))) for p in projects])
+            studentsbylecturer[l].append(s)
+nstudentsbyproject = defaultdict(int,
+                                 [(p, len(studentsbyproject[p])) for p in projects])
 
 newclass = {True: 'class="newgroup"', 
             False: ""}
