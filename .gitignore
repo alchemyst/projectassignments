@@ -2,3 +2,6 @@
 _darcs
 *.pyc
 *~
+.idea
+.project
+.vscode
