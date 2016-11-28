@@ -70,18 +70,18 @@ check nstudents <= sum{l in lecturer} lectmax[l];
 
 /* Constraints */
 /* Every student assigned only once */
-s.t. studentsassigned{s in student}: 
+s.t. studentsassigned{s in student}:
         sum{p in project} assigned[s,p] = 1;
 /* pre-assignments */
 s.t. preassignments{s in student, p in project}:
         assigned[s,p] >= preassigned[s,p];
 /* Projects assigned within their limits */
-s.t. projectassigned{p in project} : 
+s.t. projectassigned{p in project}:
         projmin[p] <= sum{s in student} assigned[s,p] <= projmax[p];
 /* Lecturers getting within their limits */
 s.t. students_per_lect{l in lecturer}:
      students_per_lecturer[l] = sum{p in project, s in student} if belongs[l, p] then assigned[s,p] else 0;
-s.t. lectotal{l in lecturer} : 
+s.t. lectotal{l in lecturer}:
         lectmin[l] <= students_per_lecturer[l] <= lectmax[l];
 /* Limit worst case selection */
 s.t. worstcase{s in student, p in project}:
