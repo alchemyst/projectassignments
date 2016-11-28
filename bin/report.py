@@ -220,7 +220,7 @@ outfile.write(str(qt.h2("Assignment breakdown")) + '\n')
 outfile.write("<table>\n")
 outfile.write(str(qt.tr([qt.th('Choice'), qt.th('N'), qt.th('Marks')])))
 choicesbystudent = dict([(s, choices[(s, projectsbystudent[s])]) for s in students])
-for choice in ['P'] + range(1, 11) + ['.']:
+for choice in ['P'] + list(range(1, 11)) + ['.']:
     m = sorted([float(marks[s]) for s in students
                 if choicesbystudent[s] == str(choice)])
     outfile.write(str(qt.tr([qt.td(str(choice)),
@@ -284,9 +284,10 @@ outfile.writelines([str(qt.h2('Statistics per project')),
                     str(qt.p("Here, the bar charts are for all the students who selected the project.")),
                     "<table class='sortable'>"])
 
-breakdownvalues = ['P'] + map(str, range(1, 11)) + ['V']
-outfile.write(str(qt.tr(map(qt.th, ['Project','Popularity', 'Marks', 'Breakdown'] \
-                                    + breakdownvalues + ['Total']) + [qt.th('Title')])))
+breakdownvalues = ['P'] + [str(i) for i in range(1, 11)] + ['V']
+row = [qt.th(e) for e in ['Project','Popularity', 'Marks', 'Breakdown'] \
+                         + breakdownvalues + ['Total', 'Title']]
+outfile.write(str(qt.tr(row)))
 for p in projects:
     popularity = sum(popscore(float(choices[(s, p)])) for s in students if choices[(s,p)].isdigit())
     data = [qt.td(p), qt.td('%2.1f' % (popularity))]
@@ -368,7 +369,7 @@ outfile.write('</table>\n')
 #       
 #print >> outfile, nx.connected_components(g)
 
-print >> outfile, "</body></html>"
+outfile.write("</body></html>\n")
 
 summ = csv.writer(open(os.path.join(outdir, 'summary.csv'), 'w'))
 summ.writerow(['Student', 'Name', 'Mark', 'Project Assigned', 'Choice', 'Description'])

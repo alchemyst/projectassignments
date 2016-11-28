@@ -115,7 +115,7 @@ class amplparam(amplbase):
         else:
             newline = '\n'
         s += " := " + newline
-        for record in sorted(self.values):
+        for record in sorted(map(tuple, self.values)):
             if record[-1] != self.default:
                 s += " ".join(str(r) for r in record) + newline
         s += ";"

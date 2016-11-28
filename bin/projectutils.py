@@ -35,7 +35,7 @@ class table:
         return [tuple(row[name] for name in names) for row in self.data]
     
     def filter(self, fun):
-        self.data = filter(fun, self.data)
+        self.data = [d for d in self.data if fun(d)]
     
     def __iter__(self):
         return iter(self.data)
