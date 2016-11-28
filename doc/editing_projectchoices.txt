@@ -1,0 +1,13 @@
+Steps for editing projectchoices.xls:
+
+- Unprotect the spreadsheet (Tools|Protect)
+- Fill in new values for Project and Description columns
+- Delete all the contents of the Preference column
+- Protect cells:
+  - Select all (Cntrl-A)
+  - Right click anywhere on the sheet
+  - Select Format cells|Cell protection|Protected
+- Select the contents of the Preference column that lines up with choices
+  - Remove protection on these cells
+- Protect spreadsheet (Tools|Protect)
+  - Don't put a password

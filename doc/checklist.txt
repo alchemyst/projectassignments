@@ -1,0 +1,19 @@
+Information that needs to be gathered
+-------------------------------------
+
+Per project: 
+- Lecturer preference
+- Minimum assignments (normally zero, but if one has to be assigned,
+this is how to force an assignemnt)
+- Maximum assignments (normally one, but if a project can be done by more than one student, this is how it's done).
+- Project title
+
+Per lecturer:
+- Minimum and maximum number of students
+
+Per student:
+- Grade to be used to determine precedence (normally we use the lifetime weighted average mark calculated by Admin).
+
+Overall:
+- Mark weights (how much the mark biases your selections)
+- Lecturer weights (trade-off between 
