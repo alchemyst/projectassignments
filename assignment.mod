@@ -11,7 +11,7 @@ var Ngood{l in lecturer};
 param maxselection >=0;
 
 /* Minimum percentage of "good" students (above class average mark 
- * per lecturer 
+ * per lecturer
  */
 param mingood >= 0;
 
@@ -26,7 +26,7 @@ param lectpref{l in lecturer, p in project} >= 0;
 
 /* interpolation constant between lecturer preference function and
 student preference, expressed as student weight */
-param studentweight <= 1 >= 0; 
+param studentweight <= 1 >= 0;
 
 /* lecturer's projects */
 param belongs{l in lecturer, p in project} binary;
@@ -58,6 +58,12 @@ param averagemark := sum{s in student} mark[s] / nstudents;
 
 param goodstudent{s in student} := if mark[s] > averagemark then 1 else 0;
 
+param effectivelectmin{l in lecturer}
+   := max(lectmin[l], (sum{p in project} projmin[p]*belongs[l, p]));
+
+param effectivelectmax{l in lecturer}
+   := min(lectmax[l], (sum{p in project} projmax[p]*belongs[l, p]));
+
 /* Goal */
 minimize unhappiness: studentweight*(sum{s in student, p in project} assigned[s,p] * (studpref[s,p] * (markm*mark[s] + markc)))
                 + (1-studentweight)*(sum{s in student, l in lecturer, p in project} assigned[s,p]*belongs[l,p]*lectpref[l,p]);
@@ -65,8 +71,8 @@ minimize unhappiness: studentweight*(sum{s in student, p in project} assigned[s,
 /* Checks */
 /* Minimum projects > number of students */
 check nstudents <= sum{p in project} projmax[p];
-check nstudents >= sum{l in lecturer} lectmin[l];
-check nstudents <= sum{l in lecturer} lectmax[l];
+check nstudents >= sum{l in lecturer} effectivelectmin[l];
+check nstudents <= sum{l in lecturer} effectivelectmax[l];
 
 /* Constraints */
 /* Every student assigned only once */
