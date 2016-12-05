@@ -76,7 +76,7 @@ $(function() { $('.bar').sparkline('html', {type: 'bar'});
 <table>
 <tr><th>Choice</th><th>N</th><th>Marks</th></tr>
 
-{% for choice in breakdownvalues %}
+{% for choice in breakdownvalues + ['.'] %}
     {% set m = marksbychoice(choice) %}
     <tr><td>{{choice}}</td><td>{{len(m)}}</td><td>{{markbar(m)}}</td></tr>
 {% endfor %}
@@ -92,7 +92,6 @@ $(function() { $('.bar').sparkline('html', {type: 'bar'});
         <th>Avg Mark</th>
         <th>Breakdown</th>
         <th>Min</th>
-        <th>Selected</th>
         <th>Assigned</th>
         <th>Max</th>
         <th>Vetos</th>
@@ -104,16 +103,15 @@ $(function() { $('.bar').sparkline('html', {type: 'bar'});
 {% for l in lecturers %}
   {% set m, markavg, msparkline, preassignments, popularity, nvetos, nprojects, mins, maxs = statisticsbylecturer(l) %}
   <tr>
-    <td>{{l}}</td>
-    <td>{{'%2.1f' % markavg}}</td>
-    <td>{{msparkline}}</td>
-    <td>{{mins}}</td>
-    <td>{{projvotes}}</td>
-    <td>{{len(m)}}</td>
-    <td>{{maxs}}</td>
-    <td>{{'%2.1f' % (nvetos/nprojects)}}</td>
-    <td>{{preassignments}}</td>
-    <td>{{'%2.1f' % (popularity)}}</td>
+    <td>{{l}}</td> <!-- Lecturer -->
+    <td>{{'%2.1f' % markavg}}</td> <!-- Avg Mark -->
+    <td>{{msparkline}}</td> <!-- Breakdown -->
+    <td>{{mins}}</td> <!-- Min -->
+    <td>{{len(m)}}</td> <!-- Assigned -->
+    <td>{{maxs}}</td> <!-- Max -->
+    <td>{{'%2.1f' % (nvetos/nprojects)}}</td> <!-- Vetor -->
+    <td>{{preassignments}}</td> <!-- Pre -->
+    <td>{{'%2.1f' % (popularity)}}</td> <!-- Popularity -->
     <td>
       {% for s in studentsbylecturer[l] %}
         {% set p = projectsbystudent[s] %}
