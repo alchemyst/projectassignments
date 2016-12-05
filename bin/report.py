@@ -3,14 +3,10 @@
 """ Generate report in HTML for project selections
 """
 
-# TODO: Use an HTML template engine rather than generating all the HTML yourself
-# Probably the django template engine
-
 import itertools
 import sys
 import csv
 from projectutils import *
-import quicktag as qt
 import logging
 import datetime
 from collections import defaultdict
@@ -152,7 +148,7 @@ def tdstyle(s, p):
 flatmarks = [float(marks[s]) for s in students if s in marks]
 classavg = mean(flatmarks)
 def markbar(m):
-    return str(qt.tag('span', "%s" % ','.join(["%2.1f" % (i-classavg) for i in m]), {'class': 'bar'}))
+    return "<span class='bar'>" + ','.join("%2.1f" % (i-classavg) for i in m)
 
 choicesbystudent = dict([(s, choices[(s, projectsbystudent[s])]) for s in students])
 
