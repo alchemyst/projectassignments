@@ -154,6 +154,12 @@ classavg = mean(flatmarks)
 def markbar(m):
     return str(qt.tag('span', "%s" % ','.join(["%2.1f" % (i-classavg) for i in m]), {'class': 'bar'}))
 
+choicesbystudent = dict([(s, choices[(s, projectsbystudent[s])]) for s in students])
+
+def marksbychoice(choice):
+    return sorted([float(marks[s]) for s in students
+                   if choicesbystudent[s] == str(choice)])
+
 template = jinja2.Template(open('templates/report.html', 'r').read())
 templateoutput = template.render(datetime=datetime,
                                  c=c,
@@ -174,24 +180,11 @@ templateoutput = template.render(datetime=datetime,
                                  classavg=classavg,
                                  markbar=markbar,
                                  sorted=sorted,
-                                 flatmarks=flatmarks)
+                                 flatmarks=flatmarks,
+                                 choicesbystudent=choicesbystudent,
+                                 marksbychoice=marksbychoice,
+                                 len=len)
 outfile.write(templateoutput)
-
-# Assignment histogram
-# ======================================================================
-
-outfile.write(str(qt.h2("Assignment breakdown")) + '\n')
-outfile.write("<table>\n")
-outfile.write(str(qt.tr([qt.th('Choice'), qt.th('N'), qt.th('Marks')])))
-choicesbystudent = dict([(s, choices[(s, projectsbystudent[s])]) for s in students])
-for choice in ['P'] + list(range(1, 11)) + ['.']:
-    m = sorted([float(marks[s]) for s in students
-                if choicesbystudent[s] == str(choice)])
-    outfile.write(str(qt.tr([qt.td(str(choice)),
-                             qt.td(len(m)),
-                             qt.td(markbar(m))])))
-outfile.write("</table>")
-    
 
 # Mark summary per lecturer
 # ======================================================================

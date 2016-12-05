@@ -22,6 +22,7 @@ $(function() { $('.bar').sparkline('html', {type: 'bar'});
 /* ]]> */
 </script>
 </head>
+
 <body>
 <h1>Selections</h1>
 <p>Report generated on {{ datetime.datetime.now().strftime('%c') }}</p>
@@ -68,23 +69,20 @@ $(function() { $('.bar').sparkline('html', {type: 'bar'});
 <p>For reference, the whole class looks like this: {{markbar(sorted(flatmarks))}}</p>
 <p>You can click on the headings to sort the tables.</p>
 
-{# Translation has happened up to here
+{# Assignment histogram
+ # ====================================================================== #}
 
-# Assignment histogram
-# ======================================================================
+<h2>Assignment breakdown</h2>
+<table>
+<tr><th>Choice</th><th>N</th><th>Marks</th></tr>
 
-outfile.write(str(qt.h2("Assignment breakdown")) + '\n')
-outfile.write("<table>\n")
-outfile.write(str(qt.tr([qt.th('Choice'), qt.th('N'), qt.th('Marks')])))
-choicesbystudent = dict([(s, choices[(s, projectsbystudent[s])]) for s in students])
-for choice in ['P'] + list(range(1, 11)) + ['.']:
-    m = sorted([float(marks[s]) for s in students
-                if choicesbystudent[s] == str(choice)])
-    outfile.write(str(qt.tr([qt.td(str(choice)),
-                             qt.td(len(m)),
-                             qt.td(markbar(m))])))
-outfile.write("</table>")
+{% for choice in ['P', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '.'] %}
+    {% set m = marksbychoice(choice) %}
+    <tr><td>{{choice}}</td><td>{{len(m)}}</td><td>{{markbar(m)}}</td></tr>
+{% endfor %}
+</table>
     
+{# Translation has happened up to here
 
 # Mark summary per lecturer
 # ======================================================================
