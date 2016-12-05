@@ -76,108 +76,103 @@ $(function() { $('.bar').sparkline('html', {type: 'bar'});
 <table>
 <tr><th>Choice</th><th>N</th><th>Marks</th></tr>
 
-{% for choice in ['P', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '.'] %}
+{% for choice in breakdownvalues %}
     {% set m = marksbychoice(choice) %}
     <tr><td>{{choice}}</td><td>{{len(m)}}</td><td>{{markbar(m)}}</td></tr>
 {% endfor %}
 </table>
     
-{# Translation has happened up to here
 
-# Mark summary per lecturer
-# ======================================================================
-outfile.write(str(qt.h2("Statistics per lecturer")))
-outfile.write("\n<table class='sortable'>\n")
-outfile.write(str(qt.tr(qt.th(h) for h in ('Lecturer', 'Avg Mark', 'Breakdown', 'Number', 'Vetos', 'Pre', 'Popularity', 'Students'))))
+{# Mark summary per lecturer
+# ====================================================================== #}
+<h2>Statistics per lecturer</h2>
+<table class='sortable'>
+<tr><th>Lecturer</th><th>Avg Mark</th><th>Breakdown</th><th>Number</th><th>Vetos</th><th>Pre</th><th>Popularity</th><th>Students</th></tr>
 
+{% for l in lecturers %}
+  {% set m, markavg, msparkline, preassignments, popularity, nvetos, nprojects = statisticsbylecturer(l) %}
+  <tr>
+    <td>{{l}}</td>
+    <td>{{'%2.1f' % markavg}}</td>
+    <td>{{msparkline}}</td>
+    <td>{{len(m)}}</td>
+    <td>{{'%2.1f' % (nvetos/nprojects)}}</td>
+    <td>{{preassignments}}</td>
+    <td>{{'%2.1f' % (popularity)}}</td>
+    <td>
+      {% for s in studentsbylecturer[l] %}
+        {% set p = projectsbystudent[s] %}
+        <img src='{{photopath(s)}}'
+             alt='{{studentnames[s]}}'
+             title='{{studentnames[s]}} {{p}} {{choices[(s,p)]}} {{projectdescriptions[p]}}'
+             width=40 />
+           {% endfor %}
+    </td>
+  </tr>
+{% endfor %}
+</table>
 
-def popscore(f):
-    return 1/f if f > 0 else 1
+{# Per project
+ # ====================================================================== #}
+<h2>Statistics per project</h2>
+<p>Here, the bar charts are for all the students who selected the project.</p>
 
-for l in lecturers:
-    m = sorted([float(marks[s]) for s in studentsbylecturer[l]])
-    markavg = mean(m)
-    msparkline = markbar(m)
-    vetos = [i for i in choicesbylecturer[l] if i == 'V']
-    nvetos = len(vetos)
-    projectsbylecturer = [p for p in projects if Project(p).lecturer == l]
-    nprojects = len(projectsbylecturer)
-    preassignments = sum(1 for key in choices 
-                           if choices[key] == 'P' and key[1] in projectsbylecturer)
-    nassigned = nprojects - preassignments
-    if nassigned > 0:
-        popularity = sum([popscore(float(i)) 
-                          for i in choicesbylecturer[l] 
-                          if valid(i)])/float(nassigned)*10
-    else:
-        popularity = 0 
-    data = [qt.td(l),
-            qt.td('%2.1f' % markavg),
-            qt.td(msparkline),
-            qt.td(len(m)),
-            qt.td('%2.1f' % (float(nvetos)/nprojects)),
-            qt.td(preassignments),
-            qt.td('%2.1f' % (popularity))]
+<table class='sortable'>
+  <tr>
+    {% set cols = ['Project', 'Popularity', 'Marks', 'Breakdown'] + breakdownvalues + ['Total', 'Title'] %}
+    {% for e in cols %}
+      <td>{{e}}</td>
+    {% endfor %}
+  </tr>
 
-    photos = []
-    for s in studentsbylecturer[l]:
-        p = projectsbystudent[s]
-        title = ' '.join([studentnames[s], p, choices[(s,p)],
-                          projectdescriptions[p]])
-        photos.append(qt.tag('img', [], {'src': photopath(s),
-                                         'alt': studentnames[s],
-                                         'title': title,
-                                         'width': '40'}))
-    data.append(qt.td(photos))
-    outfile.write(str(qt.tr(data)))
-    
-outfile.write("</table>\n")
+  {% for p in projects %}
+    <tr>
+      {% set popularity, meanmarks, mb, breakdowncounts = statisticsbyproject(p) %}
+      <td>{{p}}</td>
+      <td>{{'%2.1f' % popularity}}</td>
+      <td>{{'%2.1f' % meanmarks}}</td>
+      <td>{{mb}}</td>
+      {% for c in breakdowncounts %}
+        <td>{{c}}</td>
+      {% endfor %}
+      <td>{{len(thesemarks)}}</td>
+      <td>{{projectdescriptions[p]}}</td>
+    </tr>
+    {% endfor %}
+</table>
 
-# Per project
-# ======================================================================
-outfile.writelines([str(qt.h2('Statistics per project')),
-                    str(qt.p("Here, the bar charts are for all the students who selected the project.")),
-                    "<table class='sortable'>"])
+{# ====================================================================== #}
+<h2>Student satisfaction</h2>
+<p>Who got their first choice, what were their marks, who got bad choices?</p>
+<table class='sortable'>
+  <tr><th>Number</th><th>Name</th><th>Mark</th><th>Choice</th><th>Project</th></tr>
+{% for s in students %}
+  {% set p = projectsbystudent[s] %}
+  <tr>
+    <td>{{s}}</td>
+    <td>{{studentnames[s]}}</td>
+    <td>{{"%2.1f" % float(marks[s])}}</td>
+    <td>{{choices[(s, p)]}}</td>
+    <td>{{p}}</td>
+  </tr>
+{% endfor %}
+</table>
 
-breakdownvalues = ['P'] + [str(i) for i in range(1, 11)] + ['V']
-row = [qt.th(e) for e in ['Project','Popularity', 'Marks', 'Breakdown'] \
-                         + breakdownvalues + ['Total', 'Title']]
-outfile.write(str(qt.tr(row)))
-for p in projects:
-    popularity = sum(popscore(float(choices[(s, p)])) for s in students if choices[(s,p)].isdigit())
-    data = [qt.td(p), qt.td('%2.1f' % (popularity))]
-    thesemarks = sorted(float(marks[s]) for s in students if choices[(s,p)].isdigit())
-    data += [qt.td("%2.1f" % (mean(thesemarks))),
-             qt.td(markbar(thesemarks))]
-    data += [qt.td(sum([choices[(s, p)]==str(i) for s in students])) for i in breakdownvalues]
-    data.append(qt.td(len(thesemarks)))
-    data.append(qt.td(projectdescriptions[p]))
-    outfile.write(str(qt.tr(data)))
-                 
-outfile.write("</table>\n")
+{# ====================================================================== #}
+<h2>Open projects</h2>
+<p>Which projects can still be assigned without violating constraints</p>
 
-# ======================================================================
-outfile.writelines([str(qt.h2('Student satisfaction')),
-                    str(qt.p('Who got their first choice, what were their marks, who got bad choices?')),
-                   "<table class='sortable'>",
-                   str(qt.tr(qt.th(k) for k in ('Number', 'Name', 'Mark', 'Choice', 'Project')))])
-for s in students:
-    p = projectsbystudent[s]
-    outfile.writelines(str(qt.tr(qt.td(k) for k in (s, studentnames[s], "%2.1f" % float(marks[s]), choices[(s, p)], p))))
-outfile.write("</table>\n")
-
-# ======================================================================
-outfile.writelines([str(qt.h2('Open projects')),
-                    str(qt.p('Which projects can still be assigned without violating constraints'))])
-
-outfile.write('<table>\n')
-outfile.write(str(qt.tr([qt.th('Project'), qt.th('Description')])))
-outfile.writelines([str(qt.tr([qt.td(p), qt.td(projectdescriptions[p])]))
-                    for p in projects
-                    if nstudentsbyproject[p] < int(maxperproject[p]) and len(studentsbylecturer[getlect(p)]) < int(maxperlecturer[getlect(p)])])
+<table>
+  <tr><th>Project</th><th>Description</th></tr>
+  {% for p in projects %}
+    {% if nstudentsbyproject[p] < int(maxperproject[p])
+          and len(studentsbylecturer[getlect(p)]) < int(maxperlecturer[getlect(p)]) %}
+      <tr><td>{{p}}</td><td>{{projectdescriptions[p]}}</td>
+    {% endif %}
+  {% endfor %}
 </table>
 
 </body>
 </html>
 
-#}
+

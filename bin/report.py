@@ -160,6 +160,39 @@ def marksbychoice(choice):
     return sorted([float(marks[s]) for s in students
                    if choicesbystudent[s] == str(choice)])
 
+def popscore(f):
+    return 1/f if f > 0 else 1
+
+def statisticsbylecturer(l):
+    m = sorted([float(marks[s]) for s in studentsbylecturer[l]])
+    markavg = mean(m)
+    msparkline = markbar(m)
+    vetos = [i for i in choicesbylecturer[l] if i == 'V']
+    nvetos = len(vetos)
+    projectsbylecturer = [p for p in projects if Project(p).lecturer == l]
+    nprojects = len(projectsbylecturer)
+    preassignments = sum(1 for key in choices 
+                           if choices[key] == 'P' and key[1] in projectsbylecturer)
+    nassigned = nprojects - preassignments
+    if nassigned > 0:
+        popularity = sum([popscore(float(i)) 
+                          for i in choicesbylecturer[l] 
+                          if valid(i)])/float(nassigned)*10
+    else:
+        popularity = 0
+
+    return m, markavg, msparkline, preassignments, popularity, nvetos, nprojects
+
+def statisticsbyproject(p):
+    popularity = sum(popscore(float(choices[(s, p)])) for s in students if choices[(s,p)].isdigit())
+    thesemarks = sorted(float(marks[s]) for s in students if choices[(s,p)].isdigit())
+    meanmarks = mean(thesemarks)
+    mb = markbar(thesemarks)
+    breakdowncounts = [sum(choices[(s, p)]==str(i) for s in students) for i in breakdownvalues]
+    return popularity, meanmarks, mb, breakdowncounts
+
+breakdownvalues = ['P'] + [str(i) for i in range(1, 11)] + ['V']
+
 template = jinja2.Template(open('templates/report.html', 'r').read())
 templateoutput = template.render(datetime=datetime,
                                  c=c,
@@ -183,150 +216,19 @@ templateoutput = template.render(datetime=datetime,
                                  flatmarks=flatmarks,
                                  choicesbystudent=choicesbystudent,
                                  marksbychoice=marksbychoice,
-                                 len=len)
+                                 len=len,
+                                 popscore=popscore,
+                                 statisticsbylecturer=statisticsbylecturer,
+                                 photopath=photopath,
+                                 studentsbylecturer=studentsbylecturer,
+                                 breakdownvalues=breakdownvalues,
+                                 statisticsbyproject=statisticsbyproject,
+                                 marks=marks,
+                                 float=float,
+                                 int=int,
+                                 getlect=getlect,
+                                 maxperlecturer=maxperlecturer)
 outfile.write(templateoutput)
-
-# Mark summary per lecturer
-# ======================================================================
-outfile.write(str(qt.h2("Statistics per lecturer")))
-outfile.write("\n<table class='sortable'>\n")
-outfile.write(str(qt.tr(qt.th(h) for h in ('Lecturer', 'Avg Mark', 'Breakdown', 'Number', 'Vetos', 'Pre', 'Popularity', 'Students'))))
-
-
-def popscore(f):
-    return 1/f if f > 0 else 1
-
-for l in lecturers:
-    m = sorted([float(marks[s]) for s in studentsbylecturer[l]])
-    markavg = mean(m)
-    msparkline = markbar(m)
-    vetos = [i for i in choicesbylecturer[l] if i == 'V']
-    nvetos = len(vetos)
-    projectsbylecturer = [p for p in projects if Project(p).lecturer == l]
-    nprojects = len(projectsbylecturer)
-    preassignments = sum(1 for key in choices 
-                           if choices[key] == 'P' and key[1] in projectsbylecturer)
-    nassigned = nprojects - preassignments
-    if nassigned > 0:
-        popularity = sum([popscore(float(i)) 
-                          for i in choicesbylecturer[l] 
-                          if valid(i)])/float(nassigned)*10
-    else:
-        popularity = 0 
-    data = [qt.td(l),
-            qt.td('%2.1f' % markavg),
-            qt.td(msparkline),
-            qt.td(len(m)),
-            qt.td('%2.1f' % (float(nvetos)/nprojects)),
-            qt.td(preassignments),
-            qt.td('%2.1f' % (popularity))]
-
-    photos = []
-    for s in studentsbylecturer[l]:
-        p = projectsbystudent[s]
-        title = ' '.join([studentnames[s], p, choices[(s,p)],
-                          projectdescriptions[p]])
-        photos.append(qt.tag('img', [], {'src': photopath(s),
-                                         'alt': studentnames[s],
-                                         'title': title,
-                                         'width': '40'}))
-    data.append(qt.td(photos))
-    outfile.write(str(qt.tr(data)))
-    
-outfile.write("</table>\n")
-
-# Per project
-# ======================================================================
-outfile.writelines([str(qt.h2('Statistics per project')),
-                    str(qt.p("Here, the bar charts are for all the students who selected the project.")),
-                    "<table class='sortable'>"])
-
-breakdownvalues = ['P'] + [str(i) for i in range(1, 11)] + ['V']
-row = [qt.th(e) for e in ['Project','Popularity', 'Marks', 'Breakdown'] \
-                         + breakdownvalues + ['Total', 'Title']]
-outfile.write(str(qt.tr(row)))
-for p in projects:
-    popularity = sum(popscore(float(choices[(s, p)])) for s in students if choices[(s,p)].isdigit())
-    data = [qt.td(p), qt.td('%2.1f' % (popularity))]
-    thesemarks = sorted(float(marks[s]) for s in students if choices[(s,p)].isdigit())
-    data += [qt.td("%2.1f" % (mean(thesemarks))),
-             qt.td(markbar(thesemarks))]
-    data += [qt.td(sum([choices[(s, p)]==str(i) for s in students])) for i in breakdownvalues]
-    data.append(qt.td(len(thesemarks)))
-    data.append(qt.td(projectdescriptions[p]))
-    outfile.write(str(qt.tr(data)))
-                 
-outfile.write("</table>\n")
-
-# ======================================================================
-outfile.writelines([str(qt.h2('Student satisfaction')),
-                    str(qt.p('Who got their first choice, what were their marks, who got bad choices?')),
-                   "<table class='sortable'>",
-                   str(qt.tr(qt.th(k) for k in ('Number', 'Name', 'Mark', 'Choice', 'Project')))])
-for s in students:
-    p = projectsbystudent[s]
-    outfile.writelines(str(qt.tr(qt.td(k) for k in (s, studentnames[s], "%2.1f" % float(marks[s]), choices[(s, p)], p))))
-outfile.write("</table>\n")
-
-# ======================================================================
-outfile.writelines([str(qt.h2('Open projects')),
-                    str(qt.p('Which projects can still be assigned without violating constraints'))])
-
-outfile.write('<table>\n')
-outfile.write(str(qt.tr([qt.th('Project'), qt.th('Description')])))
-outfile.writelines([str(qt.tr([qt.td(p), qt.td(projectdescriptions[p])]))
-                    for p in projects
-                    if nstudentsbyproject[p] < int(maxperproject[p]) and len(studentsbylecturer[getlect(p)]) < int(maxperlecturer[getlect(p)])])
-outfile.write('</table>\n')
-
-
-# ======================================================================
-
-# outfile.write(str(qt.h2('Choice battles')) + '\n')
-# choicesbystudent = {}
-# choicelist = []
-# for s in students:
-#      choicesbystudent[s] = [(choices[(s, p)], p) for p in projects
-#                            if choices[(s, p)] in map(str, range(1,11)) and 1 <= int(choices[(s, p)]) <= 10]
-#      choicelist.append([choicesbystudent[s], s])
-
-# for c, s in sorted(choicelist):
-#     print >> outfile, c,
-       
-
-# ======================================================================
-#outfile.write(str(qt.h2("Project correspondence")))
-#outfile.write(str(qt.p("Of the students who selected project i, what percentage also selected project j?")))
-#
-#def studentswhochose(p):
-#    return set(s for s in students if choices[(s, p)].isdigit())
-#
-#chosenprojects = [p for p in projects if len(studentswhochose(p)) > 0]
-#
-#outfile.write("\n<table class=sortable>\n")
-#outfile.write(str(qt.tr([qt.th()] + [qt.th(p) for p in chosenprojects])))
-#for pi in chosenprojects:
-#    studentsi = studentswhochose(pi)
-#    ni = len(studentsi)
-#    outfile.write("<tr>" + str(qt.th(pi)))
-#    for pj in chosenprojects:
-#        if ni == 0 or pi is pj:
-#            print >> outfile, qt.td('-')
-#        else:
-#            nij = len(studentsi.intersection(studentswhochose(pj)))
-#            print >> outfile, qt.td("%3i" % (100*nij/ni))
-#    outfile.write("</tr>\n")
-#        
-#outfile.write("</table>\n")
-
-#g = nx.Graph()
-#for ((s, p), c) in choices.iteritems():
-#    if c not in ('.', 'X') and float(c) < 3:
-#        g.add_weighted_edges_from([(s, p, 1/float(c))])
-#       
-#print >> outfile, nx.connected_components(g)
-
-outfile.write("</body></html>\n")
 
 summ = csv.writer(open(os.path.join(outdir, 'summary.csv'), 'w'))
 summ.writerow(['Student', 'Name', 'Mark', 'Project Assigned', 'Choice', 'Description'])
