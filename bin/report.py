@@ -128,10 +128,40 @@ def getlect(p):
 c = dict((key, len(list(vals))) for (key, vals) in itertools.groupby(projects, getlect))
 lecturers = sorted(c.keys())
 
+def tdstyle(s, p):
+    key = (s,p)
+    if choices[key] == '.':
+        style = 'unselected'
+    elif choices[key] == 'V':
+        style = 'veto'
+    elif choices[key] == 'P':
+        style = 'preassigned'
+    elif int(choices[key]) <= 5:
+        style = 'good'
+    elif int(choices[key]) > 7:
+        style = 'bad'
+    else:
+        style = 'selected'
+
+    if assignments.get(key, '0') == '1':
+        style += 'assigned'
+    else:
+        style += 'unassigned'
+    return style
+
+flatmarks = [float(marks[s]) for s in students if s in marks]
+classavg = mean(flatmarks)
+def markbar(m):
+    return str(qt.tag('span', "%s" % ','.join(["%2.1f" % (i-classavg) for i in m]), {'class': 'bar'}))
+
 template = jinja2.Template(open('templates/report.html', 'r').read())
 templateoutput = template.render(datetime=datetime,
                                  c=c,
                                  projects=projects,
+                                 students=students,
+                                 studentnames=studentnames,
+                                 projectsbystudent=projectsbystudent,
+                                 choices=choices,
                                  Project=Project,
                                  selected=selected,
                                  lecturers=lecturers,
@@ -139,52 +169,13 @@ templateoutput = template.render(datetime=datetime,
                                  projectdescriptions=projectdescriptions,
                                  minperproject=minperproject,
                                  nstudentsbyproject=nstudentsbyproject,
-                                 maxperproject=maxperproject)
+                                 maxperproject=maxperproject,
+                                 tdstyle=tdstyle,
+                                 classavg=classavg,
+                                 markbar=markbar,
+                                 sorted=sorted,
+                                 flatmarks=flatmarks)
 outfile.write(templateoutput)
-
-for s in students:
-    n = studentnames[s]
-    outfile.write('<tr><th class="names" title="%s - %s">%s</th>' % (s, projectsbystudent[s], n))
-    for p in projects:
-        key = (s,p)
-        if choices[key] == '.':
-            tdstyle = 'unselected'
-        elif choices[key] == 'V':
-            tdstyle = 'veto'
-        elif choices[key] == 'P':
-            tdstyle = 'preassigned'
-        elif int(choices[key]) <= 5:
-            tdstyle = 'good'
-        elif int(choices[key]) > 7:
-            tdstyle = 'bad'
-        else:
-            tdstyle = 'selected'
-            
-        if assignments.get(key, '0') == '1':
-            tdstyle += 'assigned'
-        else:
-            tdstyle += 'unassigned'
-            
-        outfile.write('<td class="%s" title="%s - %s">%s</td>' % (tdstyle, n, p, choices[(s, p)]))
-    outfile.write("</tr>\n")
-outfile.write("</tbody>")
-outfile.write("</table>")
-
-
-flatmarks = [float(marks[s]) for s in students if s in marks]
-classavg = mean(flatmarks)
-def markbar(m):
-    return str(qt.tag('span', "%s" % ','.join(["%2.1f" % (i-classavg) for i in m]), {'class': 'bar'}))
-
-# About the statistics
-
-section = [qt.h1("Statistics with marks"),
-           qt.p("Class average: %2.1f" % classavg),
-           qt.p("The bar charts indicate student marks minus class average -- red below class avg and blue above."),
-           qt.p("For reference, the whole class looks like this: " + markbar(sorted(flatmarks))),
-           qt.p("You can click on the headings to sort the tables.")]
-
-outfile.writelines(map(str, section))
 
 # Assignment histogram
 # ======================================================================
