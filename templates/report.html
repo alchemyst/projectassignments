@@ -87,15 +87,30 @@ $(function() { $('.bar').sparkline('html', {type: 'bar'});
 # ====================================================================== #}
 <h2>Statistics per lecturer</h2>
 <table class='sortable'>
-<tr><th>Lecturer</th><th>Avg Mark</th><th>Breakdown</th><th>Number</th><th>Vetos</th><th>Pre</th><th>Popularity</th><th>Students</th></tr>
+    <tr>
+        <th>Lecturer</th>
+        <th>Avg Mark</th>
+        <th>Breakdown</th>
+        <th>Min</th>
+        <th>Selected</th>
+        <th>Assigned</th>
+        <th>Max</th>
+        <th>Vetos</th>
+        <th>Pre</th>
+        <th>Popularity</th>
+        <th>Students</th>
+    </tr>
 
 {% for l in lecturers %}
-  {% set m, markavg, msparkline, preassignments, popularity, nvetos, nprojects = statisticsbylecturer(l) %}
+  {% set m, markavg, msparkline, preassignments, popularity, nvetos, nprojects, mins, maxs = statisticsbylecturer(l) %}
   <tr>
     <td>{{l}}</td>
     <td>{{'%2.1f' % markavg}}</td>
     <td>{{msparkline}}</td>
+    <td>{{mins}}</td>
+    <td>{{projvotes}}</td>
     <td>{{len(m)}}</td>
+    <td>{{maxs}}</td>
     <td>{{'%2.1f' % (nvetos/nprojects)}}</td>
     <td>{{preassignments}}</td>
     <td>{{'%2.1f' % (popularity)}}</td>
@@ -127,7 +142,7 @@ $(function() { $('.bar').sparkline('html', {type: 'bar'});
 
   {% for p in projects %}
     <tr>
-      {% set popularity, meanmarks, mb, breakdowncounts = statisticsbyproject(p) %}
+      {% set popularity, meanmarks, mb, breakdowncounts, thesemarks = statisticsbyproject(p) %}
       <td>{{p}}</td>
       <td>{{'%2.1f' % popularity}}</td>
       <td>{{'%2.1f' % meanmarks}}</td>

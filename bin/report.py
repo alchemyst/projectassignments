@@ -7,7 +7,6 @@ import itertools
 import sys
 import csv
 from projectutils import *
-import logging
 import datetime
 from collections import defaultdict
 from functools import partial
@@ -170,6 +169,9 @@ def statisticsbylecturer(l):
     preassignments = sum(1 for key in choices 
                            if choices[key] == 'P' and key[1] in projectsbylecturer)
     nassigned = nprojects - preassignments
+    mins = [d['Min'] for d in lecttable.data if d['Code'] == l][0]
+    maxs = [d['Max'] for d in lecttable.data if d['Code'] == l][0]
+
     if nassigned > 0:
         popularity = sum([popscore(float(i)) 
                           for i in choicesbylecturer[l] 
@@ -177,20 +179,21 @@ def statisticsbylecturer(l):
     else:
         popularity = 0
 
-    return m, markavg, msparkline, preassignments, popularity, nvetos, nprojects
+    return m, markavg, msparkline, preassignments, popularity, nvetos, nprojects, mins, maxs
 
 def statisticsbyproject(p):
     popularity = sum(popscore(float(choices[(s, p)])) for s in students if choices[(s,p)].isdigit())
     thesemarks = sorted(float(marks[s]) for s in students if choices[(s,p)].isdigit())
     meanmarks = mean(thesemarks)
     mb = markbar(thesemarks)
-    breakdowncounts = [sum(choices[(s, p)]==str(i) for s in students) for i in breakdownvalues]
-    return popularity, meanmarks, mb, breakdowncounts
+    breakdowncounts = [sum(int(choices[(s, p)]==str(i)) for s in students) for i in breakdownvalues]
+    return popularity, meanmarks, mb, breakdowncounts, thesemarks
 
 breakdownvalues = ['P'] + [str(i) for i in range(1, 11)] + ['V']
 
 template = jinja2.Template(open('templates/report.html', 'r').read())
 templateoutput = template.render(datetime=datetime,
+                                 lecttable=lecttable,
                                  c=c,
                                  projects=projects,
                                  students=students,
