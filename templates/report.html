@@ -1,147 +1,56 @@
-#!/usr/bin/env python
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
 
-""" Generate report in HTML for project selections
-"""
+<title>Project assignment results</title>
+<meta name="description" content="Project assignment results">
+<meta name="author" content="Automatic results generator">
 
-# TODO: Use an HTML template engine rather than generating all the HTML yourself
-# Probably the django template engine
+<link href="report.css" rel="stylesheet" type="text/css" >
+<script type="text/javascript" src="sorttable.js" ></script>
+<script type="text/javascript" src="jquery-2.1.1.min.js" ></script>
+<script type="text/javascript" src="jquery.sparkline.min.js" ></script>
+<script type="text/javascript" src="jquery.fixedheadertable.min.js"></script>
+<script type="text/javascript">
+/* <![CDATA[ */
+$(function() { $('.bar').sparkline('html', {type: 'bar'});
+               /*$('.selectionmatrix').fixedHeaderTable({footer: false, 
+                                                       cloneHeadToFoot: false, 
+                                                       fixedColumn: true }); */
+              });
+/* ]]> */
+</script>
+</head>
+<body>
+<h1>Selections</h1>
+<p>Report generated on {{ datetime.datetime.now().strftime('%c') }}</p>
 
-import itertools
-import sys
-import csv
-from projectutils import *
-import quicktag as qt
-import logging
-import datetime
-from collections import defaultdict
-from functools import partial
-import jinja2
+<table class='selectionmatrix'>
+<colgroup class='names'/>
 
-def valid(choice):
-    return choice.isdigit()
+{% for l in lecturers %}
+  <colgroup span={{c[l]}} class='lect' id='{{'col_'+l}}'/>
+{% endfor %}
+<thead>
+<tr><th/>{% for l in lecturers %}<th colspan={{c[l]}}>{{l}}{% endfor %}</tr>
+<tr>
+  <th>Project</th>
+  {% for p in projects %}
+  <th class=sel{{ p in selected }}
+      title='{{'%s (%s)' % (','.join(studentsbyproject.get(p, [])),
+                            projectdescriptions.get(p, ''))}}'>
+      {{Project(p).number}}
+  </th>
+  {% endfor %}
+</tr>
+<tr><td>Min</td>{% for p in projects %} <td>{{minperproject[p]}}</td> {% endfor %}</tr>
+<tr><td>Students</td>{% for p in projects %} <td>{{nstudentsbyproject[p]}}</td> {% endfor %}</tr>
+<tr><td>Max</td>{% for p in projects %} <td>{{maxperproject[p]}}</td> {% endfor %}</tr>
+</thead>
 
-def unlist(l):
-    """ Take the first element out of a list if there is only one element 
-        We assume that the item is indexable
-    """
-    return l if len(l) > 1 else l[0]
-
-def astuple(l):
-    """ Ensure the thing we return is a tuple, 
-        either by converting to tuple or by encapsulating the element 
-    """ 
-    return tuple(l) if type(l) in (list, tuple) else (l,)
-
-def lookuptable(t, keys, values, default=None):
-    """ Construct a lookup table from table t, using rows from keys to index the values in values
-        The idea is to call lookuptable(t, "Keyrow", "valrow") to build a simple lookup table
-        it also allows to use tuples for keys or values or both to build two-d lookups as in
-        lookuptable(t, ("Keyrow1", "Keyrow2"), "valrow"), which returns a dictionary with tuple keys.
-    """
-    if default is not None:
-        constructor = partial(defaultdict, lambda: default)
-    else:
-        constructor = dict
-    return constructor([unlist(tuple([row[i] for i in astuple(l)])) for l in [
-        keys, values]] for row in t)
-
-def mean(arr):
-    return float(sum(arr))/float(len(arr)) if len(arr) != 0 else 0
-
-def photopath(s):
-    return '../photos/%s.jpg' % s
-
-moduledir, outdir, outfilename = sys.argv[1:]
-
-outfile = open(outfilename, 'w')
-
-lecttable = table(moduledir, 'lecturers')
-lecturers = sorted(lecttable.column('Code'))
-maxperlecturer = lookuptable(lecttable, 'Code', 'Max')
-
-projecttable = table(moduledir, 'projects')
-projects = sorted(projecttable.column('Code'))
-projectdescriptions = lookuptable(projecttable, 'Code', 'Title', default='')
-minperproject = lookuptable(projecttable, 'Code', 'Min')
-maxperproject = lookuptable(projecttable, 'Code', 'Max')
-
-ignorestudents = table(outdir, 'ignore').column('Number')
-studentfilter = lambda row: row['Number'] not in ignorestudents
-
-studenttable = table(moduledir, 'students')
-studenttable.filter(studentfilter)
-studentnames = lookuptable(studenttable, 'Number', 'Name')
-students = studenttable.column('Number')
-students.sort(key=lambda s: studentnames[s])
-marks = lookuptable(studenttable, 'Number', 'Mark')
-
-choices = lookuptable(table(outdir, 'selections'), ('Number', 'Code'),
-                      'Choice', default='.')
-assignments = lookuptable(table(outdir, 'assignments'),
-                          ('Student', 'Project') , 'Assigned')
-
-# Handle preassignments
-preassignedtable = table(moduledir, 'preassigned')
-
-for key in preassignedtable.columns(('Number', 'Code')):
-    choices[key] = 'P'
-
-for key in choices:
-    if choices[key] == 'Veto':
-        choices[key] = 'V'
-
-selected = []
-projectsbystudent = defaultdict(lambda: '')
-studentsbyproject = defaultdict(lambda: [],
-                                [[p, s] for s, p in assignments.keys()
-                                 if assignments[s,p] == 1])
-nstudentsbyproject = defaultdict(int,
-                                 [(p, len(studentsbyproject[p])) for p in projects])
-
-studentsbylecturer = {l: [] for l in lecturers}
-choicesbylecturer = {l: [] for l in lecturers}
-
-for s in students:
-    for p in projects:
-        l = Project(p).lecturer
-        if l in choicesbylecturer:
-            choicesbylecturer[l].append(choices[(s, p)])
-        else:
-            choicesbylecturer[l] = [choices[(s, p)]]
-        if assignments[(s,p)] == "1":
-            projectsbystudent[s] = p
-            studentsbyproject[p].append(studentnames[s])
-            selected.append(p)
-            studentsbylecturer[l].append(s)
-nstudentsbyproject = defaultdict(int,
-                                 [(p, len(studentsbyproject[p])) for p in projects])
-
-newclass = {True: 'class="newgroup"', 
-            False: ""}
-
-
-
-# Outputs
-def getlect(p):
-    return Project(p).lecturer
-
-c = dict((key, len(list(vals))) for (key, vals) in itertools.groupby(projects, getlect))
-lecturers = sorted(c.keys())
-
-template = jinja2.Template(open('templates/report.html', 'r').read())
-templateoutput = template.render(datetime=datetime,
-                                 c=c,
-                                 projects=projects,
-                                 Project=Project,
-                                 selected=selected,
-                                 lecturers=lecturers,
-                                 studentsbyproject=studentsbyproject,
-                                 projectdescriptions=projectdescriptions,
-                                 minperproject=minperproject,
-                                 nstudentsbyproject=nstudentsbyproject,
-                                 maxperproject=maxperproject)
-outfile.write(templateoutput)
-
+<tbody>
+{# Translation has happened up to here
 for s in students:
     n = studentnames[s]
     outfile.write('<tr><th class="names" title="%s - %s">%s</th>' % (s, projectsbystudent[s], n))
@@ -350,3 +259,4 @@ for s in students:
     p = projectsbystudent[s]
     summ.writerow([s, studentnames[s], marks[s], p, choices[(s, p)], projectdescriptions[p]])
 
+#}

@@ -16,11 +16,6 @@ outputtables := $(foreach table,assignments selections,$(outdir)/$(table).csv)
 
 all: $(outdir)/report.html $(outdir)/upload.csv
 
-
-# CSV representation of the Excel selections file
-#$(out).csv: $(selections) bin/readselections.py
-#	bin/readselections.py -o $@ $(selections)
-
 $(out).csv: $(module)/selections.csv
 	[ -e $(outdir) ] || mkdir $(outdir)
 	cp $^ $@
@@ -40,7 +35,7 @@ $(outdir)/upload.csv: $(outdir)/assignments.csv
 	grep '1$$' $< | tr -d \" | cut -d , -f 1,2 >> $@
 
 # Reporting
-$(outdir)/report.html: $(out).csv $(moduletables) $(outputtables) bin/report.py
+$(outdir)/report.html: templates/report.html $(out).csv $(moduletables) $(outputtables) bin/report.py
 	bin/report.py $(module) $(outdir) $@
 	cp wwwbase/* $(outdir)
 
