@@ -11,15 +11,34 @@
 <script type="text/javascript" src="sorttable.js" ></script>
 <script type="text/javascript" src="jquery-2.1.1.min.js" ></script>
 <script type="text/javascript" src="jquery.sparkline.min.js" ></script>
-<script type="text/javascript" src="jquery.fixedheadertable.min.js"></script>
+<script type="text/javascript" src="jquery.dataTables.min.js" ></script>
 <script type="text/javascript">
 /* <![CDATA[ */
 $(function() { $('.bar').sparkline('html', {type: 'bar'});
-               /*$('.selectionmatrix').fixedHeaderTable({footer: false, 
-                                                       cloneHeadToFoot: false, 
+               /*$('.selectionmatrix').fixedHeaderTable({footer: false,
+                                                       cloneHeadToFoot: false,
                                                        fixedColumn: true }); */
               });
 /* ]]> */
+
+$(document).ready(function(){
+    // ', 'perproject', 'studentsatisfaction'];
+    $('#allselections').DataTable({
+            "scrollY": 400,
+            "scrollX": true,
+            "paging": false
+        });
+
+    $('#perproject').DataTable({
+            "scrollY": 400,
+            "paging": false
+        });
+
+    $('#studentsatisfaction').DataTable({
+            "scrollY": 400,
+            "paging": false
+        });
+});
 </script>
 </head>
 
@@ -27,7 +46,7 @@ $(function() { $('.bar').sparkline('html', {type: 'bar'});
 <h1>Selections</h1>
 <p>Report generated on {{ datetime.datetime.now().strftime('%c') }}</p>
 
-<table class='selectionmatrix'>
+<table id='allselections' class='selectionmatrix'>
 <colgroup class='names'/>
 
 {% for l in lecturers %}
@@ -81,13 +100,14 @@ $(function() { $('.bar').sparkline('html', {type: 'bar'});
     <tr><td>{{choice}}</td><td>{{len(m)}}</td><td>{{markbar(m)}}</td></tr>
 {% endfor %}
 </table>
-    
+
 
 {# Mark summary per lecturer
 # ====================================================================== #}
 <h2>Statistics per lecturer</h2>
 <table class='sortable'>
-    <tr>
+    <thead>
+        <tr>
         <th>Lecturer</th>
         <th>Avg Mark</th>
         <th>Breakdown</th>
@@ -99,7 +119,8 @@ $(function() { $('.bar').sparkline('html', {type: 'bar'});
         <th>Popularity</th>
         <th>Students</th>
     </tr>
-
+</thead>
+<tbody>
 {% for l in lecturers %}
   {% set m, markavg, msparkline, preassignments, popularity, nvetos, nprojects, mins, maxs = statisticsbylecturer(l) %}
   <tr>
@@ -123,6 +144,7 @@ $(function() { $('.bar').sparkline('html', {type: 'bar'});
     </td>
   </tr>
 {% endfor %}
+</tbody>
 </table>
 
 {# Per project
@@ -130,14 +152,16 @@ $(function() { $('.bar').sparkline('html', {type: 'bar'});
 <h2>Statistics per project</h2>
 <p>Here, the bar charts are for all the students who selected the project.</p>
 
-<table class='sortable'>
-  <tr>
-    {% set cols = ['Project', 'Popularity', 'Marks', 'Breakdown'] + breakdownvalues + ['Total', 'Title'] %}
-    {% for e in cols %}
-      <td>{{e}}</td>
-    {% endfor %}
-  </tr>
-
+<table id='perproject'>
+    <thead>
+      <tr>
+        {% set cols = ['Project', 'Popularity', 'Marks', 'Breakdown'] + breakdownvalues + ['Total', 'Title'] %}
+        {% for e in cols %}
+          <th>{{e}}</th>
+        {% endfor %}
+    </tr>
+</thead>
+<tbody>
   {% for p in projects %}
     <tr>
       {% set popularity, meanmarks, mb, breakdowncounts, thesemarks = statisticsbyproject(p) %}
@@ -152,13 +176,17 @@ $(function() { $('.bar').sparkline('html', {type: 'bar'});
       <td>{{projectdescriptions[p]}}</td>
     </tr>
     {% endfor %}
+</tbody>
 </table>
 
 {# ====================================================================== #}
 <h2>Student satisfaction</h2>
 <p>Who got their first choice, what were their marks, who got bad choices?</p>
-<table class='sortable'>
-  <tr><th>Picture</th><th>Number</th><th>Name</th><th>Mark</th><th>Choice</th><th>Project</th></tr>
+<table id='studentsatisfaction'>
+<thead>
+<tr><th>Picture</th><th>Number</th><th>Name</th><th>Mark</th><th>Choice</th><th>Project</th></tr>
+</thead>
+<tbody>
 {% for s in students %}
   {% set p = projectsbystudent[s] %}
   <tr>
@@ -173,7 +201,10 @@ $(function() { $('.bar').sparkline('html', {type: 'bar'});
     <td>{{p}}</td>
   </tr>
 {% endfor %}
+</tbody>
 </table>
+
+<img src='markplot.png'/>
 
 {# ====================================================================== #}
 <h2>Open projects</h2>
@@ -191,5 +222,3 @@ $(function() { $('.bar').sparkline('html', {type: 'bar'});
 
 </body>
 </html>
-
-

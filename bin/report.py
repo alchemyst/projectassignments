@@ -12,19 +12,21 @@ from collections import defaultdict
 from functools import partial
 import jinja2
 
+import matplotlib.pyplot as plt
+
 def valid(choice):
     return choice.isdigit()
 
 def unlist(l):
-    """ Take the first element out of a list if there is only one element 
+    """ Take the first element out of a list if there is only one element
         We assume that the item is indexable
     """
     return l if len(l) > 1 else l[0]
 
 def astuple(l):
-    """ Ensure the thing we return is a tuple, 
-        either by converting to tuple or by encapsulating the element 
-    """ 
+    """ Ensure the thing we return is a tuple,
+        either by converting to tuple or by encapsulating the element
+    """
     return tuple(l) if type(l) in (list, tuple) else (l,)
 
 def lookuptable(t, keys, values, default=None):
@@ -111,7 +113,7 @@ for s in students:
 nstudentsbyproject = defaultdict(int,
                                  [(p, len(studentsbyproject[p])) for p in projects])
 
-newclass = {True: 'class="newgroup"', 
+newclass = {True: 'class="newgroup"',
             False: ""}
 
 
@@ -166,15 +168,15 @@ def statisticsbylecturer(l):
     nvetos = len(vetos)
     projectsbylecturer = [p for p in projects if Project(p).lecturer == l]
     nprojects = len(projectsbylecturer)
-    preassignments = sum(1 for key in choices 
+    preassignments = sum(1 for key in choices
                            if choices[key] == 'P' and key[1] in projectsbylecturer)
     nassigned = nprojects - preassignments
     mins = [d['Min'] for d in lecttable.data if d['Code'] == l][0]
     maxs = [d['Max'] for d in lecttable.data if d['Code'] == l][0]
 
     if nassigned > 0:
-        popularity = sum([popscore(float(i)) 
-                          for i in choicesbylecturer[l] 
+        popularity = sum([popscore(float(i))
+                          for i in choicesbylecturer[l]
                           if valid(i)])/float(nassigned)*10
     else:
         popularity = 0
@@ -231,7 +233,19 @@ outfile.write(templateoutput)
 
 summ = csv.writer(open(os.path.join(outdir, 'summary.csv'), 'w'))
 summ.writerow(['Student', 'Name', 'Mark', 'Project Assigned', 'Choice', 'Description'])
+
+markplot = []
+choiceplot = []
+
 for s in students:
     p = projectsbystudent[s]
+    markplot.append(float(marks[s]))
+    c = choices[(s, p)]
+    choiceplot.append(0 if c == 'P' else float(c))
     summ.writerow([s, studentnames[s], marks[s], p, choices[(s, p)], projectdescriptions[p]])
 
+plt.scatter(markplot, choiceplot, alpha=0.5)
+plt.gca().invert_yaxis()
+plt.xlabel('Mark')
+plt.ylabel('Choice')
+plt.savefig(os.path.join(outdir, 'markplot.png'))
