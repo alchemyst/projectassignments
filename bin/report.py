@@ -241,11 +241,12 @@ for s in students:
     p = projectsbystudent[s]
     markplot.append(float(marks[s]))
     c = choices[(s, p)]
-    choiceplot.append(0 if c == 'P' else float(c))
+    choiceplot.append(0 if c == 'P' else 11 if c == '.' else float(c))
     summ.writerow([s, studentnames[s], marks[s], p, choices[(s, p)], projectdescriptions[p]])
 
 plt.scatter(markplot, choiceplot, alpha=0.5)
 plt.gca().invert_yaxis()
+plt.yticks(range(12), ['P'] + list(range(1, 11)) + ['.'])
 plt.xlabel('Mark')
 plt.ylabel('Choice')
 plt.savefig(os.path.join(outdir, 'markplot.png'))
