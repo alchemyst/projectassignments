@@ -105,8 +105,9 @@ printf "------------ Run inputs ---------\n";
 printf "Number of students:            %3i\n", nstudents;
 printf "Number of lecturers:           %3i\n", sum{l in lecturer} 1;
 printf "Number of projects:            %3i\n", sum{p in project} projmax[p];
-printf "Minimum assignments (lectmin): %3i\n", sum{l in lecturer} (lectmin[l]);
-printf "Minimum assignments (projmin): %3i\n", sum{p in project} (projmin[p]);
+printf "Maximum assignments (lectmax): %3i\n", sum{l in lecturer} effectivelectmax[l];
+printf "Minimum assignments (lectmin): %3i\n", sum{l in lecturer} lectmin[l];
+printf "Minimum assignments (projmin): %3i\n", sum{p in project} projmin[p];
 printf "Average mark:                  %2.1f\n", averagemark;
 /*
 printf "------ Popularity --------\n";
