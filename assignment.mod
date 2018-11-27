@@ -151,13 +151,12 @@ printf "Average unhappiness: %5.2f\n", (sum{s in student, p in project} assigned
 /* FIXME: The denominator in the following expression is probably wrong. */
 printf "Average unhappiness for students who chose: %5.2f\n", (sum{s in student, p in project} if 1 <= studpref[s,p] && studpref[s,p] <= 10 then studpref[s,p]*assigned[s,p] else 0)/(sum{s in student, p in project} if 1 <= studpref[s,p] && studpref[s,p] <= 10 then assigned[s,p] else 0);
 printf "---- Results ----- \n";
-printf "Nprojects: Number of projects (including pre-allocations)\n";
+printf "Nstudents: Number of students (including pre-allocations)\n";
 printf "Ngood    : Number of good students (with above class average marks)\n";
-printf "Lecturer    Nprojects        Ngood\n";
+printf "Lecturer    Nstudents        Ngood         \%Good\n";
 for {l in lecturer}
 {
-	printf "%s\t%8i\t%8i\n", l, (sum{p in project, s in student} 
-            if belongs[l, p] then assigned[s,p] else 0), (sum{s in student, p in project} belongs[l,p]*assigned[s,p]*goodstudent[s]);
+	printf "%s\t%8i\t%8i\t%8i\n", l, students_per_lecturer[l], Ngood[l], Ngood[l]/students_per_lecturer[l]*100;
 }
 
 table assigment_table {s in student, p in project} OUT "CSV" "assignments.csv" :
